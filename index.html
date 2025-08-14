@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anti-Pattern Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tile {
+            transition: all 0.2s ease-in-out;
+        }
+        .tile:hover {
+            transform: scale(1.1);
+        }
+        .losing-pattern {
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { background-color: rgb(239, 68, 68); }
+            50% { background-color: rgb(220, 38, 38); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">Anti-Pattern Game</h1>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-2xl mx-auto">
+                <p class="text-blue-800 text-sm">
+                    <strong>Rules:</strong> Players alternate placing X or O symbols. 
+                    You lose if any pattern repeats 3 times consecutively!
+                </p>
+            </div>
+        </div>
+
+        <!-- Game Status -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <div class="text-lg font-semibold">
+                    <span id="currentPlayer" class="text-blue-600">Player 1</span>'s Turn
+                    <span id="currentPlayerSymbol" class="text-2xl ml-2 font-bold" style="color: #F9716E;">X</span>
+                </div>
+                <button id="resetButton" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    New Game
+                </button>
+            </div>
+            
+            <!-- Game Controls -->
+            <div class="flex gap-4 justify-center mb-6">
+                <button id="blackButton" class="text-white px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2" style="background-color: #F9716E; hover:background-color: #e85a56;">
+                    <span class="text-xl font-bold">X</span> Place X
+                </button>
+                <button id="whiteButton" class="text-white px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2" style="background-color: #61ACE0; hover:background-color: #4f98cc;">
+                    <span class="text-xl font-bold">O</span> Place O
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Board -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800">Current Sequence</h3>
+            <div id="gameBoard" class="flex flex-wrap gap-2 min-h-[80px] p-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                <div class="text-gray-500 italic" id="emptyMessage">No moves yet - start playing!</div>
+            </div>
+            <div class="mt-4 text-sm text-gray-600">
+                <span id="sequenceLength">Sequence length: 0</span>
+            </div>
+        </div>
+
+        <!-- Game Result -->
+        <div id="gameResult" class="bg-white rounded-lg shadow-lg p-6 hidden">
+            <div class="text-center">
+                <h3 class="text-2xl font-bold mb-4" id="resultTitle">Game Over!</h3>
+                <div class="mb-4">
+                    <div id="winnerMessage" class="text-lg mb-2"></div>
+                    <div id="losingPatternMessage" class="text-sm text-gray-600"></div>
+                </div>
+                <button id="playAgainButton" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                    Play Again
+                </button>
+            </div>
+        </div>
+
+        <!-- Pattern Detection Info -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold mb-3 text-gray-800">Pattern Detection</h3>
+            <div class="text-sm text-gray-600 space-y-2">
+                <p>• Patterns are checked from length 1 to floor(sequence_length ÷ 3)</p>
+                <p>• A player loses when any pattern appears 3 times consecutively</p>
+                <p>• Examples: "XXX" (pattern "X"), "XOXOXO" (pattern "XO")</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class AntiPatternGame {
+            constructor() {
+                this.sequence = [];
+                this.currentPlayer = 1;
+                this.gameOver = false;
+                this.winner = null;
+                this.losingPattern = null;
+                this.losingPatternStart = null;
+            }
+
+            addMove(move) {
+                if (this.gameOver) {
+                    return false;
+                }
+
+                if (move !== 'B' && move !== 'W') {
+                    return false;
+                }
+
+                this.sequence.push(move);
+
+                const patternResult = this.checkPatterns();
+                if (patternResult) {
+                    this.gameOver = true;
+                    this.winner = this.currentPlayer === 1 ? 2 : 1;
+                    this.losingPattern = patternResult.pattern;
+                    this.losingPatternStart = patternResult.startIndex;
+                    return true;
+                }
+
+                this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+                return true;
+            }
+
+            checkPatterns() {
+                const sequenceLength = this.sequence.length;
+
+                for (let patternLength = 1; patternLength <= Math.floor(sequenceLength / 3); patternLength++) {
+                    if (sequenceLength >= 3 * patternLength) {
+                        const lastElements = this.sequence.slice(-(3 * patternLength));
+                        
+                        const segment1 = lastElements.slice(0, patternLength);
+                        const segment2 = lastElements.slice(patternLength, 2 * patternLength);
+                        const segment3 = lastElements.slice(2 * patternLength);
+
+                        if (this.arraysEqual(segment1, segment2) && this.arraysEqual(segment2, segment3)) {
+                            return {
+                                pattern: segment1.join(''),
+                                startIndex: sequenceLength - 3 * patternLength
+                            };
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            arraysEqual(arr1, arr2) {
+                return arr1.length === arr2.length && arr1.every((val, index) => val === arr2[index]);
+            }
+
+            getSequenceString() {
+                return this.sequence.join('');
+            }
+
+            getLosingPatternDisplay() {
+                if (!this.losingPattern || this.losingPatternStart === null) {
+                    return "";
+                }
+
+                const sequenceStr = this.getSequenceString();
+                const pattern = this.losingPattern;
+                const startIdx = this.losingPatternStart;
+
+                const segments = [];
+                for (let i = 0; i < 3; i++) {
+                    const segmentStart = startIdx + i * pattern.length;
+                    const segmentEnd = segmentStart + pattern.length;
+                    segments.push(sequenceStr.slice(segmentStart, segmentEnd));
+                }
+
+                return `Pattern '${pattern}' repeated 3 times: ${segments.join(' | ')}`;
+            }
+
+            reset() {
+                this.sequence = [];
+                this.currentPlayer = 1;
+                this.gameOver = false;
+                this.winner = null;
+                this.losingPattern = null;
+                this.losingPatternStart = null;
+            }
+        }
+
+        // Game instance
+        const game = new AntiPatternGame();
+
+        // DOM elements
+        const currentPlayerEl = document.getElementById('currentPlayer');
+        const currentPlayerSymbolEl = document.getElementById('currentPlayerSymbol');
+        const blackButton = document.getElementById('blackButton');
+        const whiteButton = document.getElementById('whiteButton');
+        const resetButton = document.getElementById('resetButton');
+        const gameBoardEl = document.getElementById('gameBoard');
+        const emptyMessageEl = document.getElementById('emptyMessage');
+        const sequenceLengthEl = document.getElementById('sequenceLength');
+        const gameResultEl = document.getElementById('gameResult');
+        const resultTitleEl = document.getElementById('resultTitle');
+        const winnerMessageEl = document.getElementById('winnerMessage');
+        const losingPatternMessageEl = document.getElementById('losingPatternMessage');
+        const playAgainButton = document.getElementById('playAgainButton');
+
+        // Event listeners
+        blackButton.addEventListener('click', () => makeMove('B'));
+        whiteButton.addEventListener('click', () => makeMove('W'));
+        resetButton.addEventListener('click', resetGame);
+        playAgainButton.addEventListener('click', resetGame);
+
+        function makeMove(move) {
+            if (game.gameOver) return;
+
+            const success = game.addMove(move);
+            if (success) {
+                updateDisplay();
+                if (game.gameOver) {
+                    showGameResult();
+                } else {
+                    updateCurrentPlayer();
+                }
+            }
+        }
+
+        function updateDisplay() {
+            // Update game board
+            if (game.sequence.length === 0) {
+                gameBoardEl.innerHTML = '<div class="text-gray-500 italic" id="emptyMessage">No moves yet - start playing!</div>';
+            } else {
+                emptyMessageEl.style.display = 'none';
+                gameBoardEl.innerHTML = '';
+                
+                game.sequence.forEach((move, index) => {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile w-12 h-12 rounded-lg flex items-center justify-center text-white text-2xl font-bold cursor-pointer border-2 border-white';
+                    
+                    // Check if this tile is part of the losing pattern
+                    if (game.gameOver && game.losingPatternStart !== null) {
+                        const patternLength = game.losingPattern.length;
+                        const patternEnd = game.losingPatternStart + 3 * patternLength;
+                        if (index >= game.losingPatternStart && index < patternEnd) {
+                            tile.classList.add('losing-pattern');
+                        }
+                    }
+                    
+                    if (move === 'B') {
+                        tile.style.backgroundColor = '#F9716E';
+                        tile.textContent = 'X';
+                    } else {
+                        tile.style.backgroundColor = '#61ACE0';
+                        tile.textContent = 'O';
+                    }
+                    
+                    gameBoardEl.appendChild(tile);
+                });
+            }
+
+            // Update sequence length
+            sequenceLengthEl.textContent = `Sequence length: ${game.sequence.length}`;
+        }
+
+        function updateCurrentPlayer() {
+            currentPlayerEl.textContent = `Player ${game.currentPlayer}`;
+            if (game.currentPlayer === 1) {
+                currentPlayerSymbolEl.textContent = 'X';
+                currentPlayerSymbolEl.style.color = '#F9716E';
+            } else {
+                currentPlayerSymbolEl.textContent = 'O';
+                currentPlayerSymbolEl.style.color = '#61ACE0';
+            }
+            
+            // Update button states
+            if (game.currentPlayer === 1) {
+                blackButton.classList.remove('opacity-50');
+                whiteButton.classList.add('opacity-50');
+            } else {
+                blackButton.classList.add('opacity-50');
+                whiteButton.classList.remove('opacity-50');
+            }
+        }
+
+        function showGameResult() {
+            gameResultEl.classList.remove('hidden');
+            
+            resultTitleEl.textContent = `Player ${game.winner} Wins!`;
+            winnerMessageEl.textContent = `Player ${game.currentPlayer} loses!`;
+            losingPatternMessageEl.textContent = game.getLosingPatternDisplay();
+            
+            // Disable game buttons
+            blackButton.disabled = true;
+            whiteButton.disabled = true;
+            blackButton.classList.add('opacity-50', 'cursor-not-allowed');
+            whiteButton.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        function resetGame() {
+            game.reset();
+            gameResultEl.classList.add('hidden');
+            
+            // Enable game buttons
+            blackButton.disabled = false;
+            whiteButton.disabled = false;
+            blackButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            whiteButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            updateDisplay();
+            updateCurrentPlayer();
+        }
+
+        // Initialize display
+        updateDisplay();
+        updateCurrentPlayer();
+    </script>
+</body>
+</html>
