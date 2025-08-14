@@ -39,7 +39,6 @@
             <div class="flex justify-between items-center mb-4">
                 <div class="text-lg font-semibold">
                     <span id="currentPlayer" class="text-blue-600">Player 1</span>'s Turn
-                    <span id="currentPlayerSymbol" class="text-2xl ml-2 font-bold" style="color: #F9716E;">X</span>
                 </div>
                 <button id="resetButton" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
                     New Game
@@ -48,7 +47,7 @@
             
             <!-- Game Controls -->
             <div class="flex gap-4 justify-center mb-6">
-                <button id="blackButton" class="text-white px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2" style="background-color: #F9716E; hover:background-color: #e85a56;">
+                <button id="blackButton" class="text-black px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2" style="background-color: #ACFF85; hover:background-color: #9de674;">
                     <span class="text-xl font-bold">X</span> Place X
                 </button>
                 <button id="whiteButton" class="text-white px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2" style="background-color: #61ACE0; hover:background-color: #4f98cc;">
@@ -193,7 +192,6 @@
 
         // DOM elements
         const currentPlayerEl = document.getElementById('currentPlayer');
-        const currentPlayerSymbolEl = document.getElementById('currentPlayerSymbol');
         const blackButton = document.getElementById('blackButton');
         const whiteButton = document.getElementById('whiteButton');
         const resetButton = document.getElementById('resetButton');
@@ -248,7 +246,8 @@
                     }
                     
                     if (move === 'B') {
-                        tile.style.backgroundColor = '#F9716E';
+                        tile.style.backgroundColor = '#ACFF85';
+                        tile.style.color = 'black';
                         tile.textContent = 'X';
                     } else {
                         tile.style.backgroundColor = '#61ACE0';
@@ -265,22 +264,6 @@
 
         function updateCurrentPlayer() {
             currentPlayerEl.textContent = `Player ${game.currentPlayer}`;
-            if (game.currentPlayer === 1) {
-                currentPlayerSymbolEl.textContent = 'X';
-                currentPlayerSymbolEl.style.color = '#F9716E';
-            } else {
-                currentPlayerSymbolEl.textContent = 'O';
-                currentPlayerSymbolEl.style.color = '#61ACE0';
-            }
-            
-            // Update button states
-            if (game.currentPlayer === 1) {
-                blackButton.classList.remove('opacity-50');
-                whiteButton.classList.add('opacity-50');
-            } else {
-                blackButton.classList.add('opacity-50');
-                whiteButton.classList.remove('opacity-50');
-            }
         }
 
         function showGameResult() {
