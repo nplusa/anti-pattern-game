@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anti-Pattern Game - Multiplayer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        .tile {
+            transition: all 0.2s ease-in-out;
+        }
+        .tile:hover {
+            transform: scale(1.1);
+        }
+        .losing-pattern {
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { background-color: rgb(239, 68, 68); }
+            50% { background-color: rgb(220, 38, 38); }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .connected {
+            background-color: #10B981;
+        }
+        .disconnected {
+            background-color: #EF4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">Anti-Pattern Game - Multiplayer</h1>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-2xl mx-auto">
+                <p class="text-blue-800 text-sm">
+                    <strong>Rules:</strong> Players alternate placing X or O symbols. 
+                    You lose if any pattern repeats 3 times consecutively!
+                </p>
+            </div>
+        </div>
+
+        <!-- Connection Status -->
+        <div class="fixed top-4 right-4 z-50">
+            <div id="connectionStatus" class="px-3 py-1 rounded-full text-white text-sm font-semibold">
+                Connecting...
+            </div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobbyScreen" class="max-w-md mx-auto">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Join or Create Game</h2>
+                
+                <!-- Create Game -->
+                <div class="mb-6">
+                    <button id="createGameBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold transition-colors">
+                        Create New Game
+                    </button>
+                </div>
+                
+                <!-- Join Game -->
+                <div class="border-t pt-6">
+                    <h3 class="text-lg font-semibold mb-3 text-gray-700">Join Existing Game</h3>
+                    <div class="flex gap-2">
+                        <input 
+                            type="text" 
+                            id="roomCodeInput" 
+                            placeholder="Enter room code" 
+                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            maxlength="6"
+                        >
+                        <button id="joinGameBtn" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors">
+                            Join
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Waiting Room -->
+        <div id="waitingRoom" class="max-w-md mx-auto hidden">
+            <div class="bg-white rounded-lg shadow-lg p-8 text-center">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">Waiting for Player</h2>
+                <div class="mb-6">
+                    <div class="text-lg mb-2">Room Code:</div>
+                    <div id="displayRoomCode" class="text-3xl font-mono font-bold text-blue-600 bg-blue-50 py-3 px-6 rounded-lg inline-block">
+                        ------
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-4">Share this code with another player to start the game!</p>
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <button id="cancelGameBtn" class="text-gray-500 hover:text-gray-700 underline">
+                    Cancel Game
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="hidden">
+            <!-- Game Status -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="text-lg font-semibold">
+                        <span id="currentPlayer" class="text-blue-600">Player 1</span>'s Turn
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-sm text-gray-600">
+                            Room: <span id="gameRoomCode" class="font-mono font-bold">------</span>
+                        </div>
+                        <button id="resetButton" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            New Game
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Player Info -->
+                <div class="flex justify-between items-center mb-4 text-sm">
+                    <div id="player1Status" class="text-gray-600">Player 1: <span class="font-semibold">You</span></div>
+                    <div id="player2Status" class="text-gray-600">Player 2: <span class="font-semibold">Connected</span></div>
+                </div>
+                
+                <!-- Game Controls -->
+                <div class="flex gap-4 justify-center mb-6">
+                    <button id="xButton" class="text-black px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2" style="background-color: #ACFF85; hover:background-color: #9de674;">
+                        <span class="text-xl font-bold">X</span> Place X
+                    </button>
+                    <button id="oButton" class="text-white px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2" style="background-color: #61ACE0; hover:background-color: #4f98cc;">
+                        <span class="text-xl font-bold">O</span> Place O
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Board -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">Current Sequence</h3>
+                <div id="gameBoard" class="flex flex-wrap gap-2 min-h-[80px] p-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <div class="text-gray-500 italic" id="emptyMessage">Waiting for game to start...</div>
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    <span id="sequenceLength">Sequence length: 0</span>
+                </div>
+            </div>
+
+            <!-- Game Result -->
+            <div id="gameResult" class="bg-white rounded-lg shadow-lg p-6 hidden">
+                <div class="text-center">
+                    <h3 class="text-2xl font-bold mb-4" id="resultTitle">Game Over!</h3>
+                    <div class="mb-4">
+                        <div id="winnerMessage" class="text-lg mb-2"></div>
+                        <div id="losingPatternMessage" class="text-sm text-gray-600"></div>
+                    </div>
+                    <button id="playAgainButton" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                        Play Again
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pattern Detection Info -->
+        <div id="patternInfo" class="bg-white rounded-lg shadow-lg p-6 hidden">
+            <h3 class="text-lg font-semibold mb-3 text-gray-800">Pattern Detection</h3>
+            <div class="text-sm text-gray-600 space-y-2">
+                <p>• Patterns are checked from length 1 to floor(sequence_length ÷ 3)</p>
+                <p>• A player loses when any pattern appears 3 times consecutively</p>
+                <p>• Examples: "XXX" (pattern "X"), "XOXOXO" (pattern "XO")</p>
+            </div>
+        </div>
+
+        <!-- Error Messages -->
+        <div id="errorMessage" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg hidden z-50">
+            <div class="text-center">
+                <div class="font-semibold mb-2">Error</div>
+                <div id="errorText">Something went wrong</div>
+                <button id="closeError" class="mt-3 bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Socket connection
+        const socket = io();
+        
+        // Game state
+        let currentRoom = null;
+        let playerNumber = null;
+        let gameState = null;
+        
+        // DOM elements
+        const lobbyScreen = document.getElementById('lobbyScreen');
+        const waitingRoom = document.getElementById('waitingRoom');
+        const gameScreen = document.getElementById('gameScreen');
+        const patternInfo = document.getElementById('patternInfo');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        
+        // Lobby elements
+        const createGameBtn = document.getElementById('createGameBtn');
+        const joinGameBtn = document.getElementById('joinGameBtn');
+        const roomCodeInput = document.getElementById('roomCodeInput');
+        const cancelGameBtn = document.getElementById('cancelGameBtn');
+        const displayRoomCode = document.getElementById('displayRoomCode');
+        
+        // Game elements
+        const currentPlayerEl = document.getElementById('currentPlayer');
+        const gameRoomCode = document.getElementById('gameRoomCode');
+        const player1Status = document.getElementById('player1Status');
+        const player2Status = document.getElementById('player2Status');
+        const xButton = document.getElementById('xButton');
+        const oButton = document.getElementById('oButton');
+        const resetButton = document.getElementById('resetButton');
+        const gameBoardEl = document.getElementById('gameBoard');
+        const sequenceLengthEl = document.getElementById('sequenceLength');
+        const gameResultEl = document.getElementById('gameResult');
+        const resultTitleEl = document.getElementById('resultTitle');
+        const winnerMessageEl = document.getElementById('winnerMessage');
+        const losingPatternMessageEl = document.getElementById('losingPatternMessage');
+        const playAgainButton = document.getElementById('playAgainButton');
+        const closeError = document.getElementById('closeError');
+        
+        // Connection status
+        socket.on('connect', () => {
+            connectionStatus.textContent = 'Connected';
+            connectionStatus.className = 'connected px-3 py-1 rounded-full text-white text-sm font-semibold';
+        });
+        
+        socket.on('disconnect', () => {
+            connectionStatus.textContent = 'Disconnected';
+            connectionStatus.className = 'disconnected px-3 py-1 rounded-full text-white text-sm font-semibold';
+        });
+        
+        // Event listeners
+        createGameBtn.addEventListener('click', createGame);
+        joinGameBtn.addEventListener('click', joinGame);
+        cancelGameBtn.addEventListener('click', cancelGame);
+        xButton.addEventListener('click', () => makeMove('X'));
+        oButton.addEventListener('click', () => makeMove('O'));
+        resetButton.addEventListener('click', resetGame);
+        playAgainButton.addEventListener('click', resetGame);
+        closeError.addEventListener('click', hideError);
+        
+        // Allow joining by pressing Enter
+        roomCodeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                joinGame();
+            }
+        });
+        
+        function createGame() {
+            socket.emit('createRoom');
+        }
+        
+        function joinGame() {
+            const roomCode = roomCodeInput.value.trim().toUpperCase();
+            if (roomCode.length !== 6) {
+                showError('Please enter a 6-character room code');
+                return;
+            }
+            socket.emit('joinRoom', roomCode);
+        }
+        
+        function cancelGame() {
+            currentRoom = null;
+            playerNumber = null;
+            showScreen('lobby');
+        }
+        
+        function makeMove(move) {
+            if (!currentRoom || !gameState || gameState.gameOver) return;
+            
+            if (gameState.playerCount < 2) {
+                showError('Waiting for second player to join');
+                return;
+            }
+            
+            socket.emit('makeMove', { roomCode: currentRoom, move });
+        }
+        
+        function resetGame() {
+            if (!currentRoom) return;
+            socket.emit('resetGame', currentRoom);
+        }
+        
+        function showScreen(screen) {
+            lobbyScreen.classList.add('hidden');
+            waitingRoom.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+            patternInfo.classList.add('hidden');
+            
+            switch (screen) {
+                case 'lobby':
+                    lobbyScreen.classList.remove('hidden');
+                    break;
+                case 'waiting':
+                    waitingRoom.classList.remove('hidden');
+                    break;
+                case 'game':
+                    gameScreen.classList.remove('hidden');
+                    patternInfo.classList.remove('hidden');
+                    break;
+            }
+        }
+        
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+            setTimeout(() => {
+                hideError();
+            }, 5000);
+        }
+        
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+        
+        function updateGameBoard(sequence, losingPatternStart, losingPatternLength) {
+            if (!sequence || sequence.length === 0) {
+                gameBoardEl.innerHTML = '<div class="text-gray-500 italic">Waiting for first move...</div>';
+                return;
+            }
+            
+            gameBoardEl.innerHTML = '';
+            
+            sequence.forEach((move, index) => {
+                const tile = document.createElement('div');
+                tile.className = 'tile w-12 h-12 rounded-lg flex items-center justify-center text-2xl font-bold border-2 border-white fade-in';
+                
+                // Check if this tile is part of the losing pattern
+                if (losingPatternStart !== null && losingPatternLength) {
+                    const patternEnd = losingPatternStart + 3 * losingPatternLength;
+                    if (index >= losingPatternStart && index < patternEnd) {
+                        tile.classList.add('losing-pattern');
+                    }
+                }
+                
+                if (move === 'X') {
+                    tile.style.backgroundColor = '#ACFF85';
+                    tile.style.color = 'black';
+                    tile.textContent = 'X';
+                } else {
+                    tile.style.backgroundColor = '#61ACE0';
+                    tile.style.color = 'white';
+                    tile.textContent = 'O';
+                }
+                
+                gameBoardEl.appendChild(tile);
+            });
+        }
+        
+        function updatePlayerStatus(state) {
+            if (playerNumber === 1) {
+                player1Status.innerHTML = 'Player 1: <span class="font-semibold text-blue-600">You</span>';
+                player2Status.innerHTML = `Player 2: <span class="font-semibold">${state.playerCount >= 2 ? 'Connected' : 'Waiting...'}</span>`;
+            } else {
+                player1Status.innerHTML = 'Player 1: <span class="font-semibold">Connected</span>';
+                player2Status.innerHTML = 'Player 2: <span class="font-semibold text-blue-600">You</span>';
+            }
+        }
+        
+        // Socket event handlers
+        socket.on('roomCreated', (data) => {
+            currentRoom = data.roomCode;
+            playerNumber = data.playerNumber;
+            gameState = data.gameState;
+            
+            displayRoomCode.textContent = currentRoom;
+            gameRoomCode.textContent = currentRoom;
+            
+            if (gameState.playerCount >= 2) {
+                showScreen('game');
+            } else {
+                showScreen('waiting');
+            }
+        });
+        
+        socket.on('roomJoined', (data) => {
+            currentRoom = data.roomCode;
+            playerNumber = data.playerNumber;
+            gameState = data.gameState;
+            
+            gameRoomCode.textContent = currentRoom;
+            showScreen('game');
+            updatePlayerStatus(gameState);
+            updateGameBoard(gameState.sequence, gameState.losingPatternStart, gameState.losingPattern?.length);
+            sequenceLengthEl.textContent = `Sequence length: ${gameState.sequence.length}`;
+            currentPlayerEl.textContent = `Player ${gameState.currentPlayer}`;
+        });
+        
+        socket.on('playerJoined', (data) => {
+            gameState = data.gameState;
+            showScreen('game');
+            updatePlayerStatus(gameState);
+            updateGameBoard(gameState.sequence, gameState.losingPatternStart, gameState.losingPattern?.length);
+        });
+        
+        socket.on('gameUpdate', (data) => {
+            gameState = data.gameState;
+            updateGameBoard(gameState.sequence, gameState.losingPatternStart, gameState.losingPattern?.length);
+            sequenceLengthEl.textContent = `Sequence length: ${gameState.sequence.length}`;
+            currentPlayerEl.textContent = `Player ${gameState.currentPlayer}`;
+            
+            if (gameState.gameOver) {
+                gameResultEl.classList.remove('hidden');
+                resultTitleEl.textContent = `Player ${gameState.winner} Wins!`;
+                winnerMessageEl.textContent = `Player ${gameState.currentPlayer} loses!`;
+                losingPatternMessageEl.textContent = gameState.losingPatternDisplay;
+                
+                // Disable game buttons
+                xButton.disabled = true;
+                oButton.disabled = true;
+                xButton.classList.add('opacity-50', 'cursor-not-allowed');
+                oButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        });
+        
+        socket.on('gameReset', (data) => {
+            gameState = data.gameState;
+            gameResultEl.classList.add('hidden');
+            
+            // Enable game buttons
+            xButton.disabled = false;
+            oButton.disabled = false;
+            xButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            oButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            updateGameBoard(gameState.sequence, null, null);
+            sequenceLengthEl.textContent = `Sequence length: ${gameState.sequence.length}`;
+            currentPlayerEl.textContent = `Player ${gameState.currentPlayer}`;
+        });
+        
+        socket.on('playerDisconnected', (data) => {
+            gameState = data.gameState;
+            updatePlayerStatus(gameState);
+            
+            if (gameState.playerCount < 2) {
+                showError('Other player disconnected. Waiting for reconnection...');
+            }
+        });
+        
+        socket.on('joinError', (message) => {
+            showError(message);
+            roomCodeInput.value = '';
+        });
+        
+        socket.on('moveError', (message) => {
+            showError(message);
+        });
+        
+        socket.on('resetError', (message) => {
+            showError(message);
+        });
+        
+        // Initialize
+        showScreen('lobby');
+    </script>
+</body>
+</html>
