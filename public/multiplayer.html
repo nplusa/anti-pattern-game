@@ -39,12 +39,14 @@
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800 mb-4">Anti-Pattern Game - Multiplayer</h1>
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-2xl mx-auto">
-                <p class="text-blue-800 text-sm">
-                    <strong>Rules:</strong> Players alternate placing X or O symbols. 
-                    You lose if any pattern repeats 3 times consecutively!
-                </p>
+            <div class="flex items-center justify-center gap-4 mb-4">
+                <h1 class="text-2xl md:text-4xl font-bold text-gray-800">Anti-Pattern Game</h1>
+                <button id="rulesButton" class="bg-gray-700 hover:bg-gray-800 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg transition-colors">
+                    ?
+                </button>
+            </div>
+            <div class="text-sm text-green-600 font-semibold">
+                Remote Play Mode
             </div>
         </div>
 
@@ -165,13 +167,65 @@
             </div>
         </div>
 
-        <!-- Pattern Detection Info -->
-        <div id="patternInfo" class="bg-white rounded-lg shadow-lg p-6 hidden">
-            <h3 class="text-lg font-semibold mb-3 text-gray-800">Pattern Detection</h3>
-            <div class="text-sm text-gray-600 space-y-2">
-                <p>• Patterns are checked from length 1 to floor(sequence_length ÷ 3)</p>
-                <p>• A player loses when any pattern appears 3 times consecutively</p>
-                <p>• Examples: "XXX" (pattern "X"), "XOXOXO" (pattern "XO")</p>
+        <!-- Rules Modal -->
+        <div id="rulesModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+                <div class="flex justify-between items-center p-6 border-b">
+                    <h2 class="text-xl font-bold text-gray-800">How To Play</h2>
+                    <button id="closeRules" class="text-gray-500 hover:text-gray-700 text-2xl font-bold">
+                        ×
+                    </button>
+                </div>
+                
+                <div class="p-6 space-y-6">
+                    <div class="text-gray-700">
+                        <p class="mb-4">Players take turns placing X or O symbols. You lose if any pattern repeats 3 times consecutively.</p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-semibold text-red-600 mb-3">Losing Example</h3>
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex flex-wrap gap-1 mb-2">
+                                <span class="w-8 h-8 bg-green-300 rounded flex items-center justify-center font-bold text-sm">X</span>
+                                <span class="w-8 h-8 bg-blue-300 rounded flex items-center justify-center font-bold text-sm">O</span>
+                                <span class="w-8 h-8 bg-red-300 rounded flex items-center justify-center font-bold text-sm border-2 border-red-500">X</span>
+                                <span class="w-8 h-8 bg-red-300 rounded flex items-center justify-center font-bold text-sm border-2 border-red-500">O</span>
+                                <span class="w-8 h-8 bg-red-300 rounded flex items-center justify-center font-bold text-sm border-2 border-red-500">O</span>
+                                <span class="w-8 h-8 bg-red-300 rounded flex items-center justify-center font-bold text-sm border-2 border-red-500">X</span>
+                                <span class="w-8 h-8 bg-red-300 rounded flex items-center justify-center font-bold text-sm border-2 border-red-500">O</span>
+                                <span class="w-8 h-8 bg-red-300 rounded flex items-center justify-center font-bold text-sm border-2 border-red-500">O</span>
+                                <span class="w-8 h-8 bg-blue-300 rounded flex items-center justify-center font-bold text-sm">X</span>
+                                <span class="w-8 h-8 bg-green-300 rounded flex items-center justify-center font-bold text-sm">O</span>
+                                <span class="w-8 h-8 bg-blue-300 rounded flex items-center justify-center font-bold text-sm">O</span>
+                            </div>
+                            <p class="text-sm text-red-700">
+                                <strong>XOO</strong> pattern repeated 3 times: XOO | XOO | XOO
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-semibold text-green-600 mb-3">Safe Example</h3>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex flex-wrap gap-1 mb-2">
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">X</span>
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">O</span>
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">X</span>
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">O</span>
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">X</span>
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">X</span>
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">O</span>
+                            </div>
+                            <p class="text-sm text-green-700">
+                                <strong>XO</strong> appears 3 times but not consecutively - Safe!
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center text-sm text-gray-500">
+                        <p>Patterns can be any length. Stay alert!</p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -200,10 +254,14 @@
         const lobbyScreen = document.getElementById('lobbyScreen');
         const waitingRoom = document.getElementById('waitingRoom');
         const gameScreen = document.getElementById('gameScreen');
-        const patternInfo = document.getElementById('patternInfo');
         const connectionStatus = document.getElementById('connectionStatus');
         const errorMessage = document.getElementById('errorMessage');
         const errorText = document.getElementById('errorText');
+        
+        // Modal elements
+        const rulesButton = document.getElementById('rulesButton');
+        const rulesModal = document.getElementById('rulesModal');
+        const closeRules = document.getElementById('closeRules');
         
         // Lobby elements
         const createGameBtn = document.getElementById('createGameBtn');
@@ -249,6 +307,22 @@
         resetButton.addEventListener('click', resetGame);
         playAgainButton.addEventListener('click', resetGame);
         closeError.addEventListener('click', hideError);
+        
+        // Modal event listeners
+        rulesButton.addEventListener('click', () => {
+            rulesModal.classList.remove('hidden');
+        });
+        
+        closeRules.addEventListener('click', () => {
+            rulesModal.classList.add('hidden');
+        });
+        
+        // Close modal when clicking outside
+        rulesModal.addEventListener('click', (e) => {
+            if (e.target === rulesModal) {
+                rulesModal.classList.add('hidden');
+            }
+        });
         
         // Allow joining by pressing Enter
         roomCodeInput.addEventListener('keypress', (e) => {
@@ -296,7 +370,6 @@
             lobbyScreen.classList.add('hidden');
             waitingRoom.classList.add('hidden');
             gameScreen.classList.add('hidden');
-            patternInfo.classList.add('hidden');
             
             switch (screen) {
                 case 'lobby':
@@ -307,7 +380,6 @@
                     break;
                 case 'game':
                     gameScreen.classList.remove('hidden');
-                    patternInfo.classList.remove('hidden');
                     break;
             }
         }

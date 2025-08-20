@@ -25,79 +25,132 @@
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800 mb-4">Anti-Pattern Game</h1>
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-2xl mx-auto">
-                <p class="text-blue-800 text-sm">
-                    <strong>Rules:</strong> Players alternate placing X or O symbols. 
-                    You lose if any pattern repeats 3 times consecutively!
-                </p>
+            <div class="flex items-center justify-center gap-4 mb-4">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Anti-Pattern Game</h1>
+                <button id="rulesButton" class="bg-gray-700 hover:bg-gray-800 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg transition-colors">
+                    ?
+                </button>
             </div>
             
             <!-- Game Mode Selection -->
-            <div class="flex gap-4 justify-center mt-6">
-                <button onclick="location.href='/multiplayer.html'" class="bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2">
-                    <span class="text-lg">🌐</span> Play Multiplayer
+            <div class="flex flex-col sm:flex-row gap-3 justify-center mt-6 px-4">
+                <button id="newGameBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 min-w-[200px]">
+                    <span class="text-lg">🎮</span> New Game
                 </button>
-                <div class="bg-gray-300 text-gray-600 px-8 py-3 rounded-lg font-semibold flex items-center gap-2">
-                    <span class="text-lg">🖥️</span> Single Player (Below)
-                </div>
+                <button onclick="location.href='/multiplayer.html'" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 min-w-[200px]">
+                    <span class="text-lg">🌐</span> Remote Play
+                </button>
             </div>
         </div>
 
-        <!-- Game Status -->
-        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <div class="flex justify-between items-center mb-4">
-                <div class="text-lg font-semibold">
-                    <span id="currentPlayer" class="text-blue-600">Player 1</span>'s Turn
+        <!-- Current Player Status -->
+        <div class="bg-white rounded-lg shadow-lg p-4 mb-4">
+            <div class="text-center">
+                <div class="text-xl font-bold text-blue-600 mb-2">
+                    <span id="currentPlayer">Player 1</span>'s Turn
                 </div>
-                <button id="resetButton" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
-                    New Game
-                </button>
-            </div>
-            
-            <!-- Game Controls -->
-            <div class="flex gap-4 justify-center mb-6">
-                <button id="blackButton" class="text-black px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2" style="background-color: #ACFF85; hover:background-color: #9de674;">
-                    <span class="text-xl font-bold">X</span> Place X
-                </button>
-                <button id="whiteButton" class="text-white px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2" style="background-color: #61ACE0; hover:background-color: #4f98cc;">
-                    <span class="text-xl font-bold">O</span> Place O
-                </button>
+                
+                <!-- Game Controls -->
+                <div class="flex gap-3 justify-center">
+                    <button id="blackButton" class="text-black px-6 py-3 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 min-w-[100px]" style="background-color: #ACFF85; hover:background-color: #9de674;">
+                        <span class="text-xl">X</span>
+                    </button>
+                    <button id="whiteButton" class="text-white px-6 py-3 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 min-w-[100px]" style="background-color: #61ACE0; hover:background-color: #4f98cc;">
+                        <span class="text-xl">O</span>
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- Game Board -->
-        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h3 class="text-xl font-semibold mb-4 text-gray-800">Current Sequence</h3>
-            <div id="gameBoard" class="flex flex-wrap gap-2 min-h-[80px] p-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+        <div class="bg-white rounded-lg shadow-lg p-4 mb-4">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-semibold text-gray-800">Sequence</h3>
+                <button id="resetButton" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                    Reset
+                </button>
+            </div>
+            <div id="gameBoard" class="flex flex-wrap gap-2 min-h-[80px] p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                 <div class="text-gray-500 italic" id="emptyMessage">No moves yet - start playing!</div>
             </div>
-            <div class="mt-4 text-sm text-gray-600">
+            <div class="mt-3 text-sm text-gray-600 text-center">
                 <span id="sequenceLength">Sequence length: 0</span>
             </div>
         </div>
 
         <!-- Game Result -->
-        <div id="gameResult" class="bg-white rounded-lg shadow-lg p-6 hidden">
+        <div id="gameResult" class="bg-white rounded-lg shadow-lg p-4 hidden">
             <div class="text-center">
-                <h3 class="text-2xl font-bold mb-4" id="resultTitle">Game Over!</h3>
+                <h3 class="text-xl font-bold mb-3" id="resultTitle">Game Over!</h3>
                 <div class="mb-4">
                     <div id="winnerMessage" class="text-lg mb-2"></div>
-                    <div id="losingPatternMessage" class="text-sm text-gray-600"></div>
+                    <div id="losingPatternMessage" class="text-sm text-gray-600 break-words"></div>
                 </div>
-                <button id="playAgainButton" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                <button id="playAgainButton" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors w-full sm:w-auto">
                     Play Again
                 </button>
             </div>
         </div>
 
-        <!-- Pattern Detection Info -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
-            <h3 class="text-lg font-semibold mb-3 text-gray-800">Pattern Detection</h3>
-            <div class="text-sm text-gray-600 space-y-2">
-                <p>• Patterns are checked from length 1 to floor(sequence_length ÷ 3)</p>
-                <p>• A player loses when any pattern appears 3 times consecutively</p>
-                <p>• Examples: "XXX" (pattern "X"), "XOXOXO" (pattern "XO")</p>
+        <!-- Rules Modal -->
+        <div id="rulesModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+                <div class="flex justify-between items-center p-6 border-b">
+                    <h2 class="text-xl font-bold text-gray-800">How To Play</h2>
+                    <button id="closeRules" class="text-gray-500 hover:text-gray-700 text-2xl font-bold">
+                        ×
+                    </button>
+                </div>
+                
+                <div class="p-6 space-y-6">
+                    <div class="text-gray-700">
+                        <p class="mb-4">Players take turns placing X or O symbols. You lose if any pattern repeats 3 times consecutively.</p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-semibold text-red-600 mb-3">Losing Example</h3>
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex flex-wrap gap-1 mb-2">
+                                <span class="w-8 h-8 bg-green-300 rounded flex items-center justify-center font-bold text-sm">X</span>
+                                <span class="w-8 h-8 bg-blue-300 rounded flex items-center justify-center font-bold text-sm">O</span>
+                                <span class="w-8 h-8 bg-red-300 rounded flex items-center justify-center font-bold text-sm border-2 border-red-500">X</span>
+                                <span class="w-8 h-8 bg-red-300 rounded flex items-center justify-center font-bold text-sm border-2 border-red-500">O</span>
+                                <span class="w-8 h-8 bg-red-300 rounded flex items-center justify-center font-bold text-sm border-2 border-red-500">O</span>
+                                <span class="w-8 h-8 bg-red-300 rounded flex items-center justify-center font-bold text-sm border-2 border-red-500">X</span>
+                                <span class="w-8 h-8 bg-red-300 rounded flex items-center justify-center font-bold text-sm border-2 border-red-500">O</span>
+                                <span class="w-8 h-8 bg-red-300 rounded flex items-center justify-center font-bold text-sm border-2 border-red-500">O</span>
+                                <span class="w-8 h-8 bg-blue-300 rounded flex items-center justify-center font-bold text-sm">X</span>
+                                <span class="w-8 h-8 bg-green-300 rounded flex items-center justify-center font-bold text-sm">O</span>
+                                <span class="w-8 h-8 bg-blue-300 rounded flex items-center justify-center font-bold text-sm">O</span>
+                            </div>
+                            <p class="text-sm text-red-700">
+                                <strong>XOO</strong> pattern repeated 3 times: XOO | XOO | XOO
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-semibold text-green-600 mb-3">Safe Example</h3>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex flex-wrap gap-1 mb-2">
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">X</span>
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">O</span>
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">X</span>
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">O</span>
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">X</span>
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">X</span>
+                                <span class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center font-bold text-sm">O</span>
+                            </div>
+                            <p class="text-sm text-green-700">
+                                <strong>XO</strong> appears 3 times but not consecutively - Safe!
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center text-sm text-gray-500">
+                        <p>Patterns can be any length. Stay alert!</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -184,7 +237,9 @@
                     segments.push(sequenceStr.slice(segmentStart, segmentEnd));
                 }
 
-                return `Pattern '${pattern}' repeated 3 times: ${segments.join(' | ')}`;
+                // Show both individual symbols and full pattern
+                const patternChars = pattern.split('').join(', ');
+                return `Pattern "${pattern}" (${patternChars}) repeated 3 times: ${segments.join(' | ')}`;
             }
 
             reset() {
@@ -213,12 +268,35 @@
         const winnerMessageEl = document.getElementById('winnerMessage');
         const losingPatternMessageEl = document.getElementById('losingPatternMessage');
         const playAgainButton = document.getElementById('playAgainButton');
+        
+        // Modal elements
+        const rulesButton = document.getElementById('rulesButton');
+        const rulesModal = document.getElementById('rulesModal');
+        const closeRules = document.getElementById('closeRules');
+        const newGameBtn = document.getElementById('newGameBtn');
 
         // Event listeners
         blackButton.addEventListener('click', () => makeMove('B'));
         whiteButton.addEventListener('click', () => makeMove('W'));
         resetButton.addEventListener('click', resetGame);
         playAgainButton.addEventListener('click', resetGame);
+        newGameBtn.addEventListener('click', resetGame);
+        
+        // Modal event listeners
+        rulesButton.addEventListener('click', () => {
+            rulesModal.classList.remove('hidden');
+        });
+        
+        closeRules.addEventListener('click', () => {
+            rulesModal.classList.add('hidden');
+        });
+        
+        // Close modal when clicking outside
+        rulesModal.addEventListener('click', (e) => {
+            if (e.target === rulesModal) {
+                rulesModal.classList.add('hidden');
+            }
+        });
 
         function makeMove(move) {
             if (game.gameOver) return;

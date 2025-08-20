@@ -117,7 +117,9 @@ class AntiPatternGame {
             segments.push(sequenceStr.slice(segmentStart, segmentEnd));
         }
 
-        return `Pattern '${pattern}' repeated 3 times: ${segments.join(' | ')}`;
+        // Show both individual symbols and full pattern
+        const patternChars = pattern.split('').join(', ');
+        return `Pattern "${pattern}" (${patternChars}) repeated 3 times: ${segments.join(' | ')}`;
     }
 
     getGameState() {
